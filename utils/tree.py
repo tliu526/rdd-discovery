@@ -117,7 +117,7 @@ class RDDTree:
         Returns
             None
         """
-        
+        print("split at level {}".format(depth))
         # check if if no good split was found or node is pure
         if (node['group'] is None) or self._is_terminal(df):
             self._process_terminal(node, df)
@@ -161,64 +161,4 @@ class RDDTree:
         Builds a tree with nodes as dicts.
         """
         self.root = self._get_split(self.df)
-        self._split_node(self.root, self.df)
-
-
-if __name__ == '__main__':
-    #%% sanity checks
-    from sklearn.linear_model import LogisticRegression
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    from sim import gen_fuzzy_rdd, point_plot
-
-    # generate some data
-    n = 1000
-    df = gen_fuzzy_rdd(n, 0.8, 0.8, 0.2, seed=0)
-
-    # fit background function
-    lr = LogisticRegression(random_state=0)
-    X = df['x'].values.reshape(-1, 1)
-    lr.fit(X, df['t'])
-
-    test_X = np.linspace(0,1,100).reshape(-1, 1)
-    preds = lr.predict_proba(test_X)[:, 1]
-
-    #plot the RDD and the background function
-    scale=100
-    point_plot('x', 't', df, scale, errwidth=0)
-    plt.xlabel("Forcing variable")
-    plt.ylabel("Treatment")
-    disp_X = np.floor(test_X.flatten()*scale)
-    sns.lineplot(disp_X, preds, color='red', label="estimated Pr(T)")
-    plt.legend()
-    plt.show()
-
-    # check LLR computation
-    all_Ps = lr.predict_proba(X)[:, 1]
-    all_Ts = df['t']
-    cutoffs = np.arange(0.1, 1, 0.1)
-
-    llrs = []
-    for cutoff in cutoffs:
-        Gs = (X > cutoff).astype(int).flatten()
-        llr = compute_llr(all_Ps, all_Ts, Gs)
-        llrs.append(llr)
-
-    plt.plot(cutoffs, llrs)
-    plt.title("Maximum LLR for each candidate cutoff")
-    plt.ylabel("Max LLR")
-    plt.xlabel("cutoff")
-    #plt.axhline(y=uncorr_thres, ls='--', color='green', label="95% threshold")
-    #plt.axhline(y=corr_thres, ls='--', color='red', label="Bonferroni 95% threshold")
-    #plt.legend()
-    plt.show()
-
-    #%% test tree implementation
-
-    df['Ts'] = all_Ts
-    df['Ps'] = all_Ps
-
-    tree = RDDTree(df[['x', 'Ts', 'Ps']], 1, 1, 1)
-    tree.build_tree()
-
+        self._split_node(self.root, self.df, 0)
