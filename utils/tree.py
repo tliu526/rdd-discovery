@@ -1,7 +1,7 @@
 """
 Utilities for defining the tree-based discontinuity search mechanism.
 """
-#%% 
+#%%
 import numpy as np
 import pandas as pd
 
@@ -11,7 +11,7 @@ class RDDTree:
     def __init__(self, df, max_depth, min_size, threshold=None):
         self.df = df
         self.max_depth = max_depth
-        self.min_size = min_size        
+        self.min_size = min_size
         # TODO initialize threshold if one isn't provivded
         self.threshold = threshold
 
@@ -21,7 +21,7 @@ class RDDTree:
     def _create_split(self, df, col, value):
         """
         Creates a split of the given DataFrame on the specified value and column.
-        
+
         Args:
             df (pd.DataFrame): the data to split
             col (str): the column to split on
@@ -34,18 +34,18 @@ class RDDTree:
 
         Gs = (df[col] > value).astype(int)
         return Gs.values
-        
+
 
     def _get_split(self, df, search="exhaustive"):
         """
         Returns a candidate split of the given DataFrame, by searching over
         all data points over all columns.
 
-        TODO implement random search case, use threshold
-        
+        TODO implement random search case
+
         Args:
             df (pd.DataFrame): the data to search over, assumes presence of Ts and Ps column
-            search (str): the type of search to perform, currently only "exhaustive" is supported            
+            search (str): the type of search to perform, currently only "exhaustive" is supported
 
         Returns:
             dict: (split column (str), value (float), LLR (float), group (np.array))
@@ -55,11 +55,11 @@ class RDDTree:
         if search == "random":
             raise NotImplementedError
 
-        if search == "exhaustive": 
+        if search == "exhaustive":
             exclude_cols = ['Ts', 'Ps', 'Gs']
             sel_df = df.drop(exclude_cols, axis=1, errors='ignore')
             best_col, best_val, best_llr, best_group = None, None, -np.inf, None
-            
+
             for col in sel_df.columns:
                 candidate_vals = sel_df[col].unique()
                 for val in candidate_vals:
@@ -67,9 +67,9 @@ class RDDTree:
                     Ps = df['Ps']
                     Ts = df['Ts']
                     assert Ps.shape[0] == Gs.shape[0]
-                    
+
                     llr = compute_llr(Ps, Ts, Gs)
-                    
+
                     if llr > self.threshold and llr > best_llr:
                         best_col, best_val, best_llr, best_group = col, val, llr, Gs
 
@@ -121,7 +121,7 @@ class RDDTree:
         # check if if no good split was found or node is pure
         if (node['group'] is None) or self._is_terminal(df):
             self._process_terminal(node, df)
-            return        
+            return
 
         groups = node['group']
         left_group = df[groups == 0].reset_index(drop=True)
@@ -133,8 +133,8 @@ class RDDTree:
         right_node = {}
 
         if depth >= self.max_depth:
-            self._process_terminal(left_node, left_group) 
-            self._process_terminal(right_node, right_group) 
+            self._process_terminal(left_node, left_group)
+            self._process_terminal(right_node, right_group)
             node['left'] = left_node
             node['right'] = right_node
             return
@@ -144,7 +144,7 @@ class RDDTree:
             node['left'] = left_node
             self._split_node(left_node, left_group, depth+1)
         else:
-            self._process_terminal(left_node, left_group) 
+            self._process_terminal(left_node, left_group)
             node['left'] = left_node
 
         if right_group.shape[0] > self.min_size:
@@ -152,7 +152,7 @@ class RDDTree:
             node['right'] = right_node
             self._split_node(right_node, right_group, depth+1)
         else:
-            self._process_terminal(right_node, right_group) 
+            self._process_terminal(right_node, right_group)
             node['right'] = right_node
 
 
