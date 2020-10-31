@@ -29,9 +29,12 @@ class Node:
         self.data = None
 
     def __str__(self):
-        output = "Split col: {0}, val: {1}, llr: {2}".format(self.split_col,
-                                                             self.split_val,
-                                                             self.llr)
+        if (self.left is None) and (self.right is None):
+            output = "Terminal data shape: {}".format(self.data.shape)
+        else:
+            output = "Split col: {}, val: {}, llr: {}".format(self.split_col,
+                                                              self.split_val,
+                                                              self.llr)
 
         return output
 
@@ -91,9 +94,10 @@ class RDDTree:
             best_llr, best_group = -np.inf, None
 
             for col in sel_df.columns:
+                print("candidate column: {}".format(col))
                 # TODO hope to reduce the number of candidate values
                 candidate_vals = sel_df[col].round(decimals=3)
-                candidate_vals = candidate_vals.unique()
+                candidate_vals = sorted(candidate_vals.unique())
                 for val in candidate_vals:
                     Gs = self._create_split(sel_df, col, val)
                     Ps = df['Ps']
@@ -101,8 +105,8 @@ class RDDTree:
                     assert Ps.shape[0] == Gs.shape[0]
 
                     llr = compute_llr(Ps, Ts, Gs)
-
                     if llr > self.threshold and llr > best_llr:
+                        print("Split col: {}. val: {}, llr: {}".format(col, val, llr))
                         best_col, best_val = col, val
                         best_llr, best_group = llr, Gs
 
